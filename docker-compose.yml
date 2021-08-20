@@ -1,6 +1,6 @@
 version: '3.9'
 services:
-  postgres:
+  src:
     image: postgres:11
     ports:
       - 5433:5432
@@ -10,3 +10,12 @@ services:
       - PGPASSWORD=src
       - POSTGRES_PASSWORD=src
       - POSTGRES_USER=src
+
+  traffic:
+    image: mhoush/psycopg2
+    volumes:
+      - ./traffic/main.py:/src/main.py
+    working_dir: /src/
+    command: ["python", "main.py"]
+    depends_on:
+      - src
