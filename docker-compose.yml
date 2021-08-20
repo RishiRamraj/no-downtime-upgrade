@@ -22,9 +22,13 @@ services:
 
   traffic:
     image: mhoush/psycopg2
+    ports:
+      - 8080:80
     volumes:
       - ./traffic/main.py:/src/main.py
     working_dir: /src/
     command: ["python", "main.py"]
+    tty: true
     depends_on:
       - src
+      - dest

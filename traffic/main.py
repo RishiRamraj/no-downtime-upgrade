@@ -1,5 +1,7 @@
 from psycopg2.pool import ThreadedConnectionPool
 from contextlib import contextmanager
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import random
 
 
 INSERT_USERS = """
@@ -125,12 +127,33 @@ def get_cursor():
         pools[target].putconn(connection)
 
 
-with get_cursor() as cursor:
-    cursor.execute("SELECT 1")
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """
+        Swap the current pool.
+        """
+        global current_pool
 
-current_pool = "dest"
+        # Make the switch.
+        print("switching to dest")
+        current_pool = "dest"
 
-with get_cursor() as cursor:
-    cursor.execute("SELECT 1")
+        # Send a response.
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"switching to dest")
 
-print("all done")
+
+def main():
+    """
+    Application entry point.
+    """
+    # Create the server.
+    host = ("0.0.0.0", 80)
+    print("Listening on %s:%d" % host)
+    httpd = HTTPServer(host, SimpleHTTPRequestHandler)
+    httpd.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
