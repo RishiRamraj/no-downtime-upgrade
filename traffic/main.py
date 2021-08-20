@@ -2,6 +2,8 @@ from psycopg2.pool import ThreadedConnectionPool
 from contextlib import contextmanager
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import random
+import threading
+import time
 
 
 INSERT_USERS = """
@@ -86,6 +88,17 @@ SELECT
 FROM shuffled s
 """
 
+# Used to randomly select a query.
+QUERIES = {
+    'users': INSERT_USERS,
+    'posts': INSERT_POSTS,
+    'comments': INSERT_COMMENTS,
+}
+
+# The maximum time between inserts.
+MAX_TIME = 5.0
+
+
 # To simulate switch over to new containers, we'll use a global pools.
 pools = {}
 current_pool = "src"
@@ -122,12 +135,12 @@ def get_cursor():
 
     connection = pools[target].getconn()
     try:
-        yield connection.cursor()
+        yield connection, connection.cursor()
     finally:
         pools[target].putconn(connection)
 
 
-class handler(BaseHTTPRequestHandler):
+class switch_handler(BaseHTTPRequestHandler):
     def do_GET(self):
         """
         Swap the current pool.
@@ -135,23 +148,56 @@ class handler(BaseHTTPRequestHandler):
         global current_pool
 
         # Make the switch.
-        print("switching to dest")
+        print("Switching to dest")
         current_pool = "dest"
 
         # Send a response.
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"switching to dest")
+        self.wfile.write(b"Switching to dest")
+
+
+def inserter():
+    """
+    Connect to the database and insert data.
+    """
+    # Pick a query.
+    query = random.choice(list(QUERIES.keys()))
+
+    # Run the query.
+    with get_cursor() as result:
+        connection, cursor = result
+        cursor.execute(QUERIES[query])
+        connection.commit()
+
+    # Print the result.
+    print('Inserted ', cursor.rowcount, query)
+
+
+def runner():
+    """
+    Loop forever and insert data at random intervals.
+    """
+    while True:
+        # Insert data.
+        inserter()
+
+        # Wait for the next iteration.
+        time.sleep(random.random() * MAX_TIME)
 
 
 def main():
     """
     Application entry point.
     """
-    # Create the server.
+    # Run the inserter in another thread so that the http server can run.
+    thread = threading.Thread(target=runner)
+    thread.start()
+
+    # Run the http server.
     host = ("0.0.0.0", 80)
-    print("Listening on %s:%d" % host)
-    httpd = HTTPServer(host, SimpleHTTPRequestHandler)
+    print("Listening on ", *host)
+    httpd = HTTPServer(host, switch_handler)
     httpd.serve_forever()
 
 
