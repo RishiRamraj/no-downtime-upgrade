@@ -90,13 +90,13 @@ FROM shuffled s
 
 # Used to randomly select a query.
 QUERIES = {
-    'users': INSERT_USERS,
-    'posts': INSERT_POSTS,
-    'comments': INSERT_COMMENTS,
+    "users": INSERT_USERS,
+    "posts": INSERT_POSTS,
+    "comments": INSERT_COMMENTS,
 }
 
 # The maximum time between inserts.
-MAX_TIME = 5.0
+MAX_TIME = 2.0
 
 
 # To simulate switch over to new containers, we'll use a global pools.
@@ -154,7 +154,7 @@ class switch_handler(BaseHTTPRequestHandler):
         # Send a response.
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Switching to dest")
+        self.wfile.write(b"Switching to dest\n")
 
 
 def inserter():
@@ -171,7 +171,7 @@ def inserter():
         connection.commit()
 
     # Print the result.
-    print('Inserted ', cursor.rowcount, query)
+    print("Inserted ", cursor.rowcount, query)
 
 
 def runner():
