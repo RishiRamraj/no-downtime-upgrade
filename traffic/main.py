@@ -105,18 +105,18 @@ current_pool = "src"
 pools["src"] = ThreadedConnectionPool(
     minconn=0,
     maxconn=10,
-    database="src",
-    user="src",
-    password="src",
+    database="database",
+    user="database",
+    password="database",
     host="src",
     port=5432,
 )
 pools["dest"] = ThreadedConnectionPool(
     minconn=0,
     maxconn=10,
-    database="dest",
-    user="dest",
-    password="dest",
+    database="database",
+    user="database",
+    password="database",
     host="dest",
     port=5432,
 )

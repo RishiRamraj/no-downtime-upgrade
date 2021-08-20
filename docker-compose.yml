@@ -8,8 +8,9 @@ services:
       - ./src/init.sh:/docker-entrypoint-initdb.d/initdb.sh
     environment:
       - PGPASSWORD=src
-      - POSTGRES_PASSWORD=src
-      - POSTGRES_USER=src
+      - POSTGRES_PASSWORD=database
+      - POSTGRES_USER=database
+    command: ["postgres", "-c", "wal_level=logical"]
 
   dest:
     image: postgres:11
@@ -17,8 +18,9 @@ services:
       - 5434:5432
     environment:
       - PGPASSWORD=dest
-      - POSTGRES_PASSWORD=dest
-      - POSTGRES_USER=dest
+      - POSTGRES_PASSWORD=database
+      - POSTGRES_USER=database
+    command: ["postgres", "-c", "wal_level=logical"]
 
   traffic:
     image: mhoush/psycopg2
