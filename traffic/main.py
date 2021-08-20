@@ -1,4 +1,5 @@
-import psycopg2
+from psycopg2.pool import ThreadedConnectionPool
+from contextlib import contextmanager
 
 
 INSERT_USERS = """
@@ -83,18 +84,53 @@ SELECT
 FROM shuffled s
 """
 
-# To simulate switch over to new containers, we'll use a global object to
-# store the connection parameters.
-parameters = {
-    "user": "src",
-    "password": "src",
-    "host": "src",
-    "port": "5432",
-    "database": "src",
-}
+# To simulate switch over to new containers, we'll use a global pools.
+pools = {}
+current_pool = "src"
+pools["src"] = ThreadedConnectionPool(
+    minconn=0,
+    maxconn=10,
+    database="src",
+    user="src",
+    password="src",
+    host="src",
+    port=5432,
+)
+pools["dest"] = ThreadedConnectionPool(
+    minconn=0,
+    maxconn=10,
+    database="dest",
+    user="dest",
+    password="dest",
+    host="dest",
+    port=5432,
+)
 
-with psycopg2.connect(**parameters) as connection:
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT 1")
+
+@contextmanager
+def get_cursor():
+    """
+    Get a cursor from the current pool.
+    """
+    global pools
+    global current_pool
+
+    # Copy the pool in case it changes.
+    target = current_pool[:]
+
+    connection = pools[target].getconn()
+    try:
+        yield connection.cursor()
+    finally:
+        pools[target].putconn(connection)
+
+
+with get_cursor() as cursor:
+    cursor.execute("SELECT 1")
+
+current_pool = "dest"
+
+with get_cursor() as cursor:
+    cursor.execute("SELECT 1")
 
 print("all done")

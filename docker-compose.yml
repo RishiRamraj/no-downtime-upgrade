@@ -11,6 +11,15 @@ services:
       - POSTGRES_PASSWORD=src
       - POSTGRES_USER=src
 
+  dest:
+    image: postgres:11
+    ports:
+      - 5434:5432
+    environment:
+      - PGPASSWORD=dest
+      - POSTGRES_PASSWORD=dest
+      - POSTGRES_USER=dest
+
   traffic:
     image: mhoush/psycopg2
     volumes:
